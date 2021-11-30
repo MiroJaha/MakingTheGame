@@ -1,0 +1,145 @@
+//MARK: Making The Game
+enum Color {
+    case red
+    case blue
+    case green
+}
+
+struct Card {
+    var color: Color
+    var roll: Int
+
+    init(color: Color){
+        self.color = color
+
+        switch color{
+        case .blue: roll = Int.random(in: 1...2)
+        case .red: roll = Int.random(in: 3...4)
+        case .green: roll = Int.random(in: 4...6)
+        }
+    }
+}
+
+class Deck {
+    var cards = [Card]()
+
+    init(){
+        for _ in 1...10{
+            cards.append(Card(color: .blue))
+            cards.append(Card(color: .red))
+            cards.append(Card(color: .green))
+        }
+    }
+
+    func SelectTopMost() -> Card {
+        return cards.removeFirst()
+    }
+
+    func isEmpty() -> Bool {
+        return cards.isEmpty
+    }
+
+    func shuffle() {
+        cards.shuffle()
+    }
+}
+
+class Player {
+    var name: String
+    var hand: [Card]
+    var coins: Int
+
+    init(name: String){
+        self.name = name
+        hand = [Card]()
+        coins = 0
+    }
+
+    func draw(deck: Deck) -> Card {
+        hand.append(deck.SelectTopMost())
+        return hand[hand.endIndex - 1]
+    }
+
+    func rollDice() -> Int {
+        return Int.random(in: 1...6)
+    }
+
+    func matchingCards(color: Color, roll: Int) -> Int {
+        var totalCards = 0
+        for card in hand{
+            if color == card.color && roll == card.roll{
+                totalCards += 1
+            }
+        }
+        return totalCards
+    }
+}
+
+class Game {
+    var players = [Player]()
+    var deck = Deck()
+    var turnIdx: Int
+    
+    init() {
+        players.append(Player(name: "Mike"))
+        players.append(Player(name: "Sydney"))
+        players.append(Player(name: "Blake"))
+        players.append(Player(name: "Tiffany"))
+        
+        deck.shuffle()
+        
+        turnIdx = 0
+    }
+    
+    func playGame() {
+//        print("Name \(players[turnIdx].name) Coins \(players[turnIdx].coins)")
+        if !deck.isEmpty(){
+            takeTurn(player: players[turnIdx])
+            turnIdx += 1
+            if turnIdx >= players.count {
+                turnIdx = 0
+            }
+            playGame()
+        }
+        else {
+            AnnounceWinner()
+        }
+    }
+    
+    func takeTurn(player: Player) {
+        let dice = player.rollDice()
+//        print("Dice \(dice)")
+        
+        player.coins += 2 * player.matchingCards(color: .green, roll: dice)
+//        print("Gained Coins \(player.coins)")
+        
+        for eachPlayer in players {
+            eachPlayer.coins += eachPlayer.matchingCards(color: .blue, roll: dice)
+//            print("Plyer \(eachPlayer.name) gained \(eachPlayer.coins) Coins")
+            
+            if eachPlayer.name != player.name{
+                var redMatching = eachPlayer.matchingCards(color: .red, roll: dice)
+                while (player.coins > 0 && redMatching > 0){
+                    eachPlayer.coins += 1
+                    player.coins -= 1
+                    redMatching -= 1
+                }
+            }
+//            print("\(player.name) has \(player.coins) Coins\n\(eachPlayer.name) player has \(eachPlayer.coins) Coins")
+        }
+        
+        player.draw(deck: deck)
+    }
+    
+    func AnnounceWinner() {
+        var winner = players[0]
+        for player in players {
+            if player.coins > winner.coins{
+                winner = player
+            }
+        }
+        print("The Winner Is \(winner.name) Who has \(winner.coins) Coins")
+    }
+}
+
+Game().playGame()
